@@ -425,7 +425,6 @@ function DB:ExtraDataBarSetup()
 				else
 					_G[name]:SetTemplate("Default", true)
 				end
-				E:TogglePixelBorders(_G[name], db.border)
 			end
 
 		end

@@ -296,13 +296,6 @@ function DB:GetOptions()
 					get = function() return E.db.dtbars[panelname].border end,
 					set = function(info, value) E.db.dtbars[panelname].border = value; DB:ExtraDataBarSetup() end,
 				},
-				pethide = {
-					order = 8,
-					name = L["Hide in Pet Batlle"],
-					type = 'toggle',
-					get = function() return E.db.dtbars[panelname].pethide end,
-					set = function(info, value) E.db.dtbars[panelname].pethide = value; DB:RegisterHide() end,
-				},
 				hide = {
 					order = 9,
 					type = "toggle",

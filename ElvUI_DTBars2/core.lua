@@ -52,7 +52,6 @@ DB.DefaultPanel = {
 	['width'] = 300,
 	['height'] = 22,
 	['transparent'] = false,
-	['pethide'] = true,
 	['mouseover'] = false,
 	['combatHide'] = false,
 	['vehicleHide'] = false,
@@ -72,7 +71,7 @@ E.PopupDialogs["DT_Panel_Add"] = {
 	text = L["Are you sure you want to create a panel with those parameters?\nThis action will require a reload."],
 	button1 = ACCEPT,
 	button2 = CANCEL,
-	OnAccept = function() local s = E.global.dtbarsSetup; DB:InsertPanel(s.name, s.slots, s.growth, s.width, s.transparent, s.pethide, s.anchor, s.point, s.x, s.y, s.strata, s.hide, s.border); ReloadUI() end,
+	OnAccept = function() local s = E.global.dtbarsSetup; DB:InsertPanel(s.name, s.slots, s.growth, s.width, s.transparent, s.anchor, s.point, s.x, s.y, s.strata, s.hide, s.border); ReloadUI() end,
 	timeout = 0,
 	whileDead = 1,
 	hideOnEscape = false,
@@ -222,44 +221,50 @@ end
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1");
 local LSM = LibStub("LibSharedMedia-3.0")
 function DT:LoadDataTexts()
-	self.db = E.db.datatexts
-	for name, obj in LDB:DataObjectIterator() do
-		LDB:UnregisterAllCallbacks(self)
+	LDB:UnregisterAllCallbacks(self)
+
+	local fontTemplate = LSM:Fetch("font", self.db.font)
+	local enableBGPanel = self.isInPVP and not self.ForceHideBGStats and self.db.battleground
+	local pointIndex, showBGPanel
+
+	if ElvConfigToggle then
+		ElvConfigToggle.text:FontTemplate(fontTemplate, self.db.fontSize, self.db.fontOutline)
 	end
 
-	local inInstance, instanceType = IsInInstance()
-	local fontTemplate = LSM:Fetch("font", self.db.font)
 	for panelName, panel in pairs(DT.RegisteredPanels) do
+		showBGPanel = enableBGPanel and (panelName == "LeftChatDataPanel" or panelName == "RightChatDataPanel")
+
 		--Restore Panels
-		for i=1, panel.numPoints do
+		for i = 1, panel.numPoints do
 			local newI
 			if panel.numPoints == 4 and i == 3 then newI = 5 end
-			local pointIndex = newI and DT.PointLocation[newI] or DT.PointLocation[i]
+			pointIndex = newI and DT.PointLocation[newI] or DT.PointLocation[i]
 			panel.dataPanels[pointIndex]:UnregisterAllEvents()
-			panel.dataPanels[pointIndex]:SetScript('OnUpdate', nil)
-			panel.dataPanels[pointIndex]:SetScript('OnEnter', nil)
-			panel.dataPanels[pointIndex]:SetScript('OnLeave', nil)
-			panel.dataPanels[pointIndex]:SetScript('OnClick', nil)
+			panel.dataPanels[pointIndex]:SetScript("OnUpdate", nil)
+			panel.dataPanels[pointIndex]:SetScript("OnEnter", nil)
+			panel.dataPanels[pointIndex]:SetScript("OnLeave", nil)
+			panel.dataPanels[pointIndex]:SetScript("OnClick", nil)
 			panel.dataPanels[pointIndex].text:FontTemplate(fontTemplate, self.db.fontSize, self.db.fontOutline)
+			panel.dataPanels[pointIndex].text:SetWordWrap(self.db.wordWrap)
 			panel.dataPanels[pointIndex].text:SetText(nil)
 			panel.dataPanels[pointIndex].pointIndex = pointIndex
 
-			if (panelName == 'LeftChatDataPanel' or panelName == 'RightChatDataPanel') and (inInstance and (instanceType == "pvp")) and not DT.ForceHideBGStats and E.db.datatexts.battleground then
-				panel.dataPanels[pointIndex]:RegisterEvent('UPDATE_BATTLEFIELD_SCORE')
-				panel.dataPanels[pointIndex]:SetScript('OnEvent', DT.UPDATE_BATTLEFIELD_SCORE)
-				panel.dataPanels[pointIndex]:SetScript('OnEnter', DT.BattlegroundStats)
-				panel.dataPanels[pointIndex]:SetScript('OnLeave', DT.Data_OnLeave)
-				panel.dataPanels[pointIndex]:SetScript('OnClick', DT.HideBattlegroundTexts)
+			if showBGPanel then
+				panel.dataPanels[pointIndex]:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
+				panel.dataPanels[pointIndex]:SetScript("OnEvent", DT.UPDATE_BATTLEFIELD_SCORE)
+				panel.dataPanels[pointIndex]:SetScript("OnEnter", DT.BattlegroundStats)
+				panel.dataPanels[pointIndex]:SetScript("OnLeave", DT.Data_OnLeave)
+				panel.dataPanels[pointIndex]:SetScript("OnClick", DT.HideBattlegroundTexts)
 				DT.UPDATE_BATTLEFIELD_SCORE(panel.dataPanels[pointIndex])
 			else
 				--Register Panel to Datatext
 				for name, data in pairs(DT.RegisteredDataTexts) do
 					for option, value in pairs(self.db.panels) do
-						if value and type(value) == 'table' then
+						if value and type(value) == "table" then
 							if option == panelName and self.db.panels[option][pointIndex] and self.db.panels[option][pointIndex] == name then
 								DT:AssignPanelToDataText(panel.dataPanels[pointIndex], data)
 							end
-						elseif value and type(value) == 'string' and value == name then
+						elseif value and type(value) == "string" and value == name then
 							if self.db.panels[option] == name and option == panelName then
 								DT:AssignPanelToDataText(panel.dataPanels[pointIndex], data)
 							end
@@ -275,7 +280,7 @@ function DT:LoadDataTexts()
 	end
 
 	if DT.ForceHideBGStats then
-		DT.ForceHideBGStats = nil;
+		DT.ForceHideBGStats = nil
 	end
 end
 
@@ -285,9 +290,12 @@ function DB:ProfileHandle(name, data)
 	if E.db.dtbars[name] and not E.db.dtbars[name].height then E.db.dtbars[name].height = 22 end
 	if data.slots == 1 then
 		if not P.datatexts.panels[name] then
-			P.datatexts.panels[name] = ""
+			P.datatexts.panels[name] = {
+				['left'] = "",
+			}
 		end
-		if not E.db.datatexts.panels[name] then E.db.datatexts.panels[name] = "" end
+		if not E.db.datatexts.panels[name] then E.db.datatexts.panels[name] = {} end
+		if not E.db.datatexts.panels[name]['left'] then E.db.datatexts.panels[name]['left'] = "" end
 	elseif data.slots == 2 then
 		if not P.datatexts.panels[name] then
 			P.datatexts.panels[name] = {
@@ -344,7 +352,7 @@ function DB:ProfileHandle(name, data)
 end
 
 --Creating new panel
-function DB:InsertPanel(name, slots, growth, width, transparent, pethide, anchor, point, x, y, strata, hide, border)
+function DB:InsertPanel(name, slots, growth, width, transparent, anchor, point, x, y, strata, hide, border)
 	if name == "" then return end
 	name = "DTB2_"..name
 	if not E.global.dtbars[name] then
@@ -364,7 +372,6 @@ function DB:InsertPanel(name, slots, growth, width, transparent, pethide, anchor
 					['growth'] = growth,
 					['width'] = width,
 					['transparent'] = transparent,
-					['pethide'] = pethide,
 					['border'] = border,
 				}
 			end
@@ -431,19 +438,6 @@ function DB:ExtraDataBarSetup()
 	end
 end
 
-function DB:RegisterHide()
-	for name, data in pairs(E.global.dtbars) do
-		if name then
-			local db = E.db.dtbars[name]
-			if db.pethide then
-				E.FrameLocks[name] = true
-			else
-				E.FrameLocks[name] = nil
-			end
-		end
-	end
-end
-
 function DB:OnEvent(event, unit)
 	if unit and unit ~= "player" then return end
 	local inCombat = (event == "PLAYER_REGEN_DISABLED" and true) or (event == "PLAYER_REGEN_ENABLED" and false) or InCombatLockdown()
@@ -502,28 +496,26 @@ function DB:Update()
 	for name, data in pairs(E.global.dtbars) do
 		DB:ProfileHandle(name, data)
 	end
+
 	DB:ExtraDataBarSetup()
-	--DB:RegisterHide()
 	DB:Resize()
 	DB:MouseOver()
-
-	collectgarbage('collect');
 end
 
 function DB:Initialize()
-	tinsert(E.ConfigModeLayouts, #(E.ConfigModeLayouts)+1, "DTBars");
+	tinsert(E.ConfigModeLayouts, #(E.ConfigModeLayouts) + 1, "DTBars")
 	E.ConfigModeLocalizedStrings["DTBars"] = "DTBars"
 	DB:CreateFrames()
 	DB:Resize()
 	DB:MoverCreation()
 	DB:ExtraDataBarSetup()
-	--DB:RegisterHide()
 	DB:MouseOver()
 	hooksecurefunc(E, "UpdateAll", DB.Update)
 	DB:RegisterEvent("PLAYER_REGEN_DISABLED", "OnEvent")
 	DB:RegisterEvent("PLAYER_REGEN_ENABLED", "OnEvent")
 	DB:RegisterEvent("UNIT_ENTERING_VEHICLE", "OnEvent")
 	DB:RegisterEvent("UNIT_EXITING_VEHICLE", "OnEvent")
+	DT:LoadDataTexts()
 	LibStub("LibElvUIPlugin-1.0"):RegisterPlugin(AddOnName, DB.GetOptions)
 end
 

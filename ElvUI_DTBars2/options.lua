@@ -4,7 +4,7 @@ local tcopy = table.copy
 local DT = E:GetModule('DataTexts')
 local DB = E:GetModule('DTBars2')
 
-local ADVANCED_LABEL = ADVANCED_LABEL
+local ADVANCED_OPTIONS = ADVANCED_OPTIONS
 local ADD, ENABLE, DELETE = ADD, ENABLE, DELETE
 local pairs, format = pairs, format
 
@@ -48,7 +48,7 @@ function DB:GetOptions()
 			advanced = {
 				order = 2,
 				type = "toggle",
-				name = "ADVANCED_LABEL",
+				name = ADVANCED_OPTIONS,
 				desc = L["Show additional options."],
 				get = function(info) return E.global.dtbarsSetup.advanced end,
 				set = function(info, value) E.global.dtbarsSetup.advanced = value end,
@@ -222,7 +222,7 @@ function DB:GetOptions()
 			}
 		},
 	}
-	
+
 	for panelname, data in pairs(E.global.dtbars) do
 		local table = E.Options.args.dtbars.args
 		table[panelname] = {
@@ -245,7 +245,7 @@ function DB:GetOptions()
 					desc = L["Sets number of datatext slots for the panel"],
 					min = 1, max = 5, step = 1,
 					get = function(info, value) return E.global.dtbars[panelname].slots end,
-					set = function(info, value) 
+					set = function(info, value)
 						local oldValue = E.global.dtbars[panelname].slots
 						E.PopupDialogs["DT_Slot_Changed"].text = format(L["DT_Slot_Change_Text"], oldValue, value)
 						E.PopupDialogs["DT_Slot_Changed"].OnAccept = function() E.global.dtbars[panelname].slots = value; DB:ChangeSlots(panelname) end
@@ -388,7 +388,7 @@ function DB:GetOptions()
 					order = 100,
 					name = DELETE,
 					type = 'execute',
-					func = function() 
+					func = function()
 						E.PopupDialogs["DT_Panel_Delete"].OnAccept = function() DB:DeletePanel(panelname) end
 						E:StaticPopup_Show("DT_Panel_Delete")
 					end,

@@ -484,7 +484,7 @@ function DB:CreateFrames()
 			local db = E.db.dtbars[name]
 			local bar = CreateFrame("Frame", name, E.UIParent)
 			bar:SetFrameStrata(data.strata)
-			bar:Point(data.anchor, E.UIParent, data.point, data.x, data.y);
+			bar:Point(data.anchor, E.UIParent, data.point, data.x or 0, data.y or 0);
 			DT:RegisterPanel(bar, data.slots, 'ANCHOR_BOTTOM', 0, -4)
 			bar.Name = name
 			bar:Hide()
